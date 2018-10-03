@@ -1,134 +1,7 @@
 import React, {Component} from 'react';
-
-class NavbarPresenter extends Component {
-  render() {
-    return (
-      <nav className="navbar">
-        <a href="/" className="navbar-brand">Chatty</a>
-      </nav>
-    );
-  }
-}
-
-// The main chunk of the body, containing the message list
-
-class SystemMessagePresenter extends Component {
-  render() {
-    return(
-      <div className="message system">
-        {this.props.message.content}
-      </div>
-    );
-  }
-}
-
-class ChatMessagePresenter extends Component {
-  render() {
-    return (
-        <div className="message">
-          <span className="message-username">{this.props.message.username}</span>
-          <span className="message-content">{this.props.message.content}</span>
-        </div>
-    );
-  }
-}
-
-class SystemMessageContainer extends Component {
-  render() {
-    return(
-      <SystemMessagePresenter message={this.props.message} />
-    );
-  }
-}
-
-class ChatMessageContainer extends Component {
-  render() {
-    return (
-      <ChatMessagePresenter message={this.props.message} />
-    );
-  }
-}
-
-class MainPresenter extends Component {
-  render() {
-    const messageList = this.props.messageList.map((message) => {
-      return (
-        (message.system) ?
-          <SystemMessageContainer key={message.id.toString()} message={message} /> :
-          <ChatMessageContainer key={message.id.toString()} message={message} />
-      );
-    });
-
-    return(
-      <main className="messages">
-        {messageList}
-      </main>
-    );
-  }
-}
-
-// The footer itself
-
-class FooterPresenter extends Component {
-  render() {
-    return (
-      <footer className="chatbar">
-        <input className="chatbar-username" placeholder={this.props.textbarPlaceholder} />
-        <input onKeyPress={this.props.handleKeyPress} className="chatbar-message" placeholder="Type a message and hit ENTER" />
-      </footer>
-    );
-  }
-}
-
-// The containers for the three main application sections
-
-class NavbarContainer extends Component {
-  render() {
-    return(
-      <NavbarPresenter />
-    );
-  }
-}
-
-class MainContainer extends Component {
-  render() {
-    return (
-      <MainPresenter messageList={this.props.messageList} />
-    );
-  }
-}
-
-class FooterContainer extends Component {
-  constructor(props) {
-    super(props);
-
-    this.handleKeyPress = this.handleKeyPress.bind(this);
-  }
-
-  handleKeyPress(event) {
-    if (event.key === 'Enter') {
-      this.props.addNewMessage(event.target.value);
-      event.target.value = '';
-    };
-    console.log('key pressed: ', event.key);
-  }
-
-  render() {
-    const textbarPlaceholder = (
-      this.props.currentUser.name === 'Anonymous' ?
-      'Your Name (Optional)' :
-      this.props.currentUser.name
-    );
-
-    return(
-      <FooterPresenter
-        textbarPlaceholder={textbarPlaceholder}
-        handleKeyPress={this.handleKeyPress}
-        currentUser={this.props.currentUser}
-      />
-    );
-  }
-}
+import FooterContainer from './components/footer.jsx';
+import NavbarContainer from './components/navbar.jsx';
+import MainContainer from './components/main.jsx';
 
 // The App Presenter and Container put together the entire completed SPA
 
@@ -136,9 +9,13 @@ class AppPresenter extends Component {
   render() {
     return (
       <div>
-        <NavbarContainer />
+        <NavbarContainer usersOnline={this.props.usersOnline} />
         <MainContainer messageList={this.props.messageList} />
-        <FooterContainer addNewMessage={this.props.addNewMessage} currentUser={this.props.currentUser} />
+        <FooterContainer
+          changeUser={this.props.changeUser}
+          addNewMessage={this.props.addNewMessage}
+          currentUser={this.props.currentUser}
+        />
       </div>
     );
   }
@@ -149,51 +26,79 @@ class AppContainer extends Component {
     super(props);
 
     this.state = {
-      currentUser: {name: 'Anonymous'},
-      incrementer: 4,
-      messages: [
-        {
-          username: 'Bob',
-          content: 'Has anyone seen my marbles?',
-          id: 1,
-          system: false,
-        },
-        {
-          username: 'Anonymous',
-          content: 'No, I think you lost them. You lost your marbles Bob. You lost them for good.',
-          id: 2,
-          system: false,
-        },
-      ]
+      currentUser: {
+        name: 'Anonymous',
+        color: '#F2B494',
+      },
+      usersOnline: 1,
+      messages: [],
     }
+    this.chattySocket;
 
     this.addNewMessage = this.addNewMessage.bind(this);
+    this.changeUser = this.changeUser.bind(this);
   }
 
-  addNewMessage(message) {
-    const newMessage = {
-      username: this.state.currentUser.name,
-      content: message,
-      id: this.state.incrementer,
-      system: false,
-    };
-    const oldMessages = this.state.messages;
-    const newMessages = [...oldMessages, newMessage];
-    this.setState({ messages: newMessages, incrementer: this.state.incrementer + 1 });
+  userCountChange(userNumber) {
+    this.setState({ usersOnline: userNumber });
   }
 
-    // in App.jsx
+  usersColor(newColor) {
+    const currentUser = {...this.state.currentUser};
+    currentUser.color = newColor;
+    this.setState({ currentUser });
+  }
+
   componentDidMount() {
-    console.log("componentDidMount <App />");
-    setTimeout(() => {
-      console.log("Simulating incoming message");
-      // Add a new message to the list of messages in the data store
-      const newMessage = {id: 3, username: "Michelle", content: "Hello there!", system: false};
-      const messages = this.state.messages.concat(newMessage)
-      // Update the state of the app component.
-      // Calling setState will trigger a call to render() in App and all child components.
-      this.setState({messages: messages})
-    }, 3000);
+    // intitalizing a websocket connection
+    this.chattySocket = new WebSocket("ws://localhost:3001/");
+
+    this.chattySocket.onopen = (event) => {
+      console.log('connection to server establised');
+    };
+
+    this.chattySocket.onmessage = (event) => {
+      const newMessage = JSON.parse(event.data);
+      console.log(newMessage);
+      if (newMessage.username === 'userUpdater') {
+        console.log('time to update!');
+        this.userCountChange(newMessage.content);
+        return true;
+      }
+      if (newMessage.username === 'colorAssigner') {
+        console.log('get that color');
+        this.usersColor(newMessage.content);
+        return true;
+      }
+
+      this.setState({ messages: [...this.state.messages, newMessage]});
+      console.log(this.state.messages);
+    }
+  }
+
+  // the helper functions
+  messageConstructor(message, system) {
+    const builtMessage = {
+      username: (system ? false : this.state.currentUser.name),
+      color: this.state.currentUser.color,
+      content: message,
+      system: system,
+    }
+    console.log('builtMessage: ', builtMessage);
+    return builtMessage;
+  }
+
+  addNewMessage(message, system = false) {
+    const newMessage = this.messageConstructor(message, system);
+    this.chattySocket.send(JSON.stringify(newMessage));
+  }
+
+  changeUser(username) {
+    const currentUser = {...this.state.currentUser};
+    currentUser.name = username;
+    const systemNotification = `${this.state.currentUser.name} changed their name to ${username}.`;
+    this.addNewMessage(systemNotification, true);
+    this.setState({ currentUser });
   }
 
   render() {
@@ -202,6 +107,8 @@ class AppContainer extends Component {
         messageList={this.state.messages}
         currentUser={this.state.currentUser}
         addNewMessage={this.addNewMessage}
+        changeUser={this.changeUser}
+        usersOnline={this.state.usersOnline}
       />
     );
   }
