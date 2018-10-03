@@ -5,7 +5,9 @@ A small chat room app that allows users to talk to each other.
 
 ### Final Project
 
-!["screenshot description"](#)
+!["an example of users talking to each other"](https://github.com/MaxHalleran/chattyApp/blob/master/docs/chattyApp-dialogue.png?raw=true)
+
+!["an example of users sending pictures using the app"](https://github.com/MaxHalleran/chattyApp/blob/master/docs/chattyApp-pics.png?raw=true)
 
 ### Usage
 
