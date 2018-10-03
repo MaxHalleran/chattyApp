@@ -30,9 +30,28 @@ class SystemMessageContainer extends Component {
 }
 
 class ChatMessageContainer extends Component {
+  imgAppender(string) {
+    console.log((/(.jpg)\b|(.png)\b|(gif)\b/g).test(string));
+    let newArray = string.split(' ').map((subString) => {
+      console.log(subString);
+      if ((/(.jpg)\b|(.png)\b|(gif)\b/g).test(subString)) {
+        return (<img className="message-image" src={subString} />);
+      }
+      return (subString + ' ');
+    });
+    return newArray;
+  }
+
+  imageChecker(message) {
+    const newMessage = {...message};
+    newMessage.content = this.imgAppender(message.content);
+    return newMessage;
+  }
+
   render() {
+    const forwardedMessage = this.imageChecker(this.props.message);
     return (
-      <ChatMessagePresenter message={this.props.message} />
+      <ChatMessagePresenter message={forwardedMessage} />
     );
   }
 }

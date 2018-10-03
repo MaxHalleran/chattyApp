@@ -29,14 +29,12 @@ const messageConstructor = function messageConstructor(message) {
   return newMessage;
 }
 
-const updateUserNotification = function updateUserNotification(numberOfUsers) {
-  console.log(numberOfUsers);
+function updateUserNotification(numberOfUsers) {
   const notification = {
     username: 'userUpdater',
     content: numberOfUsers,
     system: true,
   }
-  console.log(notification);
   return messageConstructor(notification);
 }
 
