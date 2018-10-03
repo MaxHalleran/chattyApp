@@ -1,7 +1,11 @@
-chatty App
+# Chatty App
 =====================
 
 A small chat room app that allows users to talk to each other.
+
+### Final Project
+
+!["screenshot description"](#)
 
 ### Usage
 
