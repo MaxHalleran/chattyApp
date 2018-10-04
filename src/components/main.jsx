@@ -1,15 +1,20 @@
 import React, {Component} from 'react';
 
-class SystemMessagePresenter extends Component {
-  render() {
-    return(
-      <div className="message system">
-        {this.props.message.content}
-      </div>
-    );
-  }
+/** SystemMessageContainer
+* as system messages are quite easy to construct and convey, the system message component is quite simple
+* @param {Object}props.message an object with the only relevant data being the content of said message.
+*/
+function SystemMessageContainer(props) {
+  return (
+    <div className="message system">
+      {props.message}
+    </div>
+  );
 }
 
+/** ChatMessagePresenter
+* As there's quite a bit of logic for the individual messages I broke the logic and the presentation into seperate pieces.
+*/
 class ChatMessagePresenter extends Component {
   render() {
     return (
@@ -21,19 +26,12 @@ class ChatMessagePresenter extends Component {
   }
 }
 
-class SystemMessageContainer extends Component {
-  render() {
-    return(
-      <SystemMessagePresenter message={this.props.message} />
-    );
-  }
-}
-
+/** ChatMessageContainer
+* the chat message container goes through all the work of formatting the users messages to allow for pictures.
+*/
 class ChatMessageContainer extends Component {
   imgAppender(string) {
-    console.log((/(.jpg)\b|(.png)\b|(gif)\b/g).test(string));
     let newArray = string.split(' ').map((subString) => {
-      console.log(subString);
       if ((/(.jpg)\b|(.png)\b|(gif)\b/g).test(subString)) {
         return (<img className="message-image" src={subString} />);
       }
@@ -56,12 +54,12 @@ class ChatMessageContainer extends Component {
   }
 }
 
-class MainPresenter extends Component {
+class MainContainer extends Component {
   render() {
     const messageList = this.props.messageList.map((message) => {
       return (
         (message.system) ?
-          <SystemMessageContainer key={message.id.toString()} message={message} /> :
+          <SystemMessageContainer key={message.id.toString()} message={message.content} /> :
           <ChatMessageContainer key={message.id.toString()} message={message} />
       );
     });
@@ -70,14 +68,6 @@ class MainPresenter extends Component {
       <main className="messages">
         {messageList}
       </main>
-    );
-  }
-}
-
-class MainContainer extends Component {
-  render() {
-    return (
-      <MainPresenter messageList={this.props.messageList} />
     );
   }
 }

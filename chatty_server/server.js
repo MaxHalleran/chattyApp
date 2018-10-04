@@ -3,7 +3,7 @@
 const express = require('express');
 const WebSocket = require('ws');
 const SocketServer = require('ws').Server;
-const uniqueId = require('uuid/v1');
+const utility = require('./utility.js');
 
 // Set the port to 3001
 const PORT = 3001;
@@ -17,55 +17,26 @@ const server = express()
 // Create the WebSockets server
 const wss = new SocketServer({ server });
 
-// Helper functions, will most likely be moved to another file/folder
-const messageConstructor = function messageConstructor(message) {
-  const newMessage = {
-    id: uniqueId(),
-    username: message.username,
-    color: message.color,
-    content: message.content,
-    system: message.system,
-  }
-  return newMessage;
-}
-
-function updateUserNotification(numberOfUsers) {
-  const notification = {
-    username: 'userUpdater',
-    content: numberOfUsers,
-    system: true,
-  }
-  return messageConstructor(notification);
-}
-
-function assignUserColor() {
-  const colorGiver = {
-    username: 'colorAssigner',
-    content: ('#'+Math.floor(Math.random()*16777215).toString(16)),
-    system: true,
-  }
-  return colorGiver;
-}
-
 // Set up a callback that will run when a client connects to the server
 // When a client connects they are assigned a socket, represented by
 // the ws parameter in the callback.
 wss.on('connection', (ws) => {
   console.log('Client connected');
 
-  //lets update the new user. But first, lets make sure we can reach them.
-  ws.send(JSON.stringify(assignUserColor()));
+  // we update new user with a unique color
+  ws.send(JSON.stringify(utility.assignUserColor()));
 
   // update online user count for all users
   console.log('attempting to update users');
   wss.clients.forEach(function each(client) {
     if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(updateUserNotification(wss.clients.size)));
+      client.send(JSON.stringify(utility.updateUserNotification(wss.clients.size)));
     }
   });
 
+  // broadcast new messages to all connected users
   ws.on('message', function incoming(data) {
-    const newMessage = JSON.stringify(messageConstructor(JSON.parse(data)));
+    const newMessage = JSON.stringify(utility.messageConstructor(JSON.parse(data)));
     wss.clients.forEach(function each(client) {
       if (client.readyState === WebSocket.OPEN) {
         console.log(newMessage);
@@ -82,7 +53,7 @@ wss.on('connection', (ws) => {
     console.log('attempting to update users');
     wss.clients.forEach((client) => {
       if (client !== ws && client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify(updateUserNotification(wss.clients.size)));
+        client.send(JSON.stringify(utility.updateUserNotification(wss.clients.size)));
       }
     });
   });

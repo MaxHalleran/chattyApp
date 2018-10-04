@@ -21,6 +21,9 @@ class AppPresenter extends Component {
   }
 }
 
+/** AppContainer
+* the main hub of the app. Takes control of the majority of the logic for the app and communicates with the WebSocket
+*/
 class AppContainer extends Component {
   constructor(props) {
     super(props);
@@ -39,14 +42,32 @@ class AppContainer extends Component {
     this.changeUser = this.changeUser.bind(this);
   }
 
-  userCountChange(userNumber) {
-    this.setState({ usersOnline: userNumber });
+  /** the user getter function
+  */
+  get user() {
+    return this.state.currentUser;
   }
 
-  usersColor(newColor) {
-    const currentUser = {...this.state.currentUser};
+  /** userCount =   * changes the usersOnline state of the app.
+  * the getter is just incase, it's never used.
+  */
+  set userCount(userNumber) {
+    this.setState({ usersOnline: userNumber });
+  }
+  get userCount() {
+    return this.state.usersOnline;
+  }
+
+  /** usersColor
+  * sets and gets the users color
+  */
+  set usersColor(newColor) {
+    const currentUser = {...this.user};
     currentUser.color = newColor;
     this.setState({ currentUser });
+  }
+  get usersColor() {
+    return this.state.currentUser.color;
   }
 
   componentDidMount() {
@@ -59,40 +80,50 @@ class AppContainer extends Component {
 
     this.chattySocket.onmessage = (event) => {
       const newMessage = JSON.parse(event.data);
-      console.log(newMessage);
       if (newMessage.username === 'userUpdater') {
-        console.log('time to update!');
-        this.userCountChange(newMessage.content);
+        this.userCount = newMessage.content;
         return true;
       }
       if (newMessage.username === 'colorAssigner') {
-        console.log('get that color');
-        this.usersColor(newMessage.content);
+        this.usersColor = newMessage.content;
         return true;
       }
 
       this.setState({ messages: [...this.state.messages, newMessage]});
-      console.log(this.state.messages);
     }
   }
 
   // the helper functions
+
+  /** messageConstructor
+  * constructs a message and populates the needed fields
+  * @param {Object}message the message data to be formatted
+  * @param {Boolean}system indicates to the constructor what kind of message to build
+  */
   messageConstructor(message, system) {
     const builtMessage = {
       username: (system ? false : this.state.currentUser.name),
-      color: this.state.currentUser.color,
+      color: this.usersColor,
       content: message,
       system: system,
     }
-    console.log('builtMessage: ', builtMessage);
     return builtMessage;
   }
 
+  /** addNewMessage
+  * builds a message and sends it to the web socket server
+  * @param {Object}message the message data given
+  * @param {Boolean}system defines whether the message is a system message or a user message. Default is user.
+  */
   addNewMessage(message, system = false) {
     const newMessage = this.messageConstructor(message, system);
     this.chattySocket.send(JSON.stringify(newMessage));
   }
 
+  /** changeUser
+  * changes the users name and sends a notification to the system
+  * @param {String}username the new username for the user
+  */
   changeUser(username) {
     const currentUser = {...this.state.currentUser};
     currentUser.name = username;
