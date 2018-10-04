@@ -32,7 +32,7 @@ class ChatMessagePresenter extends Component {
 class ChatMessageContainer extends Component {
   imgAppender(string) {
     let newArray = string.split(' ').map((subString) => {
-      if ((/(.jpg)\b|(.png)\b|(gif)\b/g).test(subString)) {
+      if ((/(.jpeg)\b|(.jpg)\b|(.png)\b|(gif)\b/g).test(subString)) {
         return (<img className="message-image" src={subString} />);
       }
       return (subString + ' ');
